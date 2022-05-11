@@ -1,0 +1,666 @@
+#include <iostream>
+#include <string>
+#include <cstring>
+#include <fstream>
+#include <stdlib.h>
+#include <string.h>
+#include <Windows.h>
+
+using namespace std;
+
+struct DuoList
+{
+	char telephone_m[13], name_m[11], surname_m[21];
+	DuoList* prev, * next;
+};
+
+void InitList(DuoList*& Head, DuoList*& Tail);
+
+void AddFirst(DuoList*& Head, DuoList*& Tail);
+void AddInBeg(DuoList*& Head, DuoList*& Tail);
+void AddInEnd(DuoList*& Head, DuoList*& Tail);
+void AddPk(DuoList*& Head, DuoList*& Tail, DuoList* const& Required);
+
+void PrintList(DuoList*& Head, DuoList*& Tail);
+void PrintElem(DuoList*& Head, DuoList* const& Required);
+
+DuoList* FindItem(DuoList*& Head);
+bool CheckRepeat(DuoList*& Head, char item[]);
+DuoList* NewNode(ifstream& in);
+
+void DeleteAll(DuoList*& Head, DuoList*& Tail);
+void DelInBeg(DuoList*& Head, DuoList*& Tail);
+void DelInEnd(DuoList*& Head, DuoList*& Tail);
+void DelByNumber(DuoList*& Head, DuoList*& Tail, DuoList* const& Required);
+
+void SortList(DuoList*& Head, DuoList*& Tail);
+
+void ToFile(DuoList*& Head, DuoList*& Tail);
+void FromFile(DuoList*& Head, DuoList*& Tail);
+
+int Menu();
+
+
+int main()
+{
+	setlocale(0, "rus");
+	SetConsoleCP(1251);
+	SetConsoleOutputCP(1251);
+
+	DuoList* Head, * Tail;
+	InitList(Head, Tail);
+
+	int choose = 0;
+	while (1)
+	{
+		switch (Menu())
+		{
+		case 1:
+			cout << "Куда добавить элемент?"
+				<< "\n1 - Создать начало списка"
+				<< "\n2 - Добавить в начало"
+				<< "\n3 - Добавить в конец"
+				<< "\n4 - Добавить в список после/перед n-ого элеемнта" << endl;
+
+			do
+			{
+				cout << "Выбор: ";
+				cin >> choose;
+			} while (choose < 1 || choose > 4);
+
+			switch (choose)
+			{
+			case 1:
+				AddFirst(Head, Tail);
+				break;
+			case 2:
+				AddInBeg(Head, Tail);
+				break;
+			case 3:
+				AddInEnd(Head, Tail);
+				break;
+			case 4:
+				AddPk(Head, Tail, FindItem(Head));
+				break;
+			}
+			break;
+
+		case 2:
+			cout << "Какой элемент удалить?"
+				<< "\n1 - В начале списка"
+				<< "\n2 - В конце списка"
+				<< "\n3 - Удалить элемент по номеру телефона"
+				<< "\n4 - Удалить весь список" << endl;
+
+			do
+			{
+				cout << "Выбор: ";
+				cin >> choose;
+			} while (choose < 1 || choose > 4);
+
+			switch (choose)
+			{
+			case 1:
+				DelInBeg(Head, Tail);
+				break;
+			case 2:
+				DelInEnd(Head, Tail);
+				break;
+			case 3:
+				DelByNumber(Head, Tail, FindItem(Head));
+				break;
+			case 4:
+				DeleteAll(Head, Tail);
+				break;
+			}
+			break;
+
+		case 3:
+			PrintList(Head, Tail);
+			break;
+		case 4:
+			PrintElem(Head, FindItem(Head));
+			break;
+		case 5:
+			SortList(Head, Tail);
+			break;
+		case 6:
+			ToFile(Head, Tail);
+			break;
+		case 7:
+			FromFile(Head, Tail);
+			break;
+		}
+	}
+	return 0;
+}
+
+int Menu()
+{
+	int result;
+	do
+	{
+		cout << "\n--------------------" << endl;
+		cout << "Меню:" << endl;
+		cout << "1 - Создать элемент списка" << endl;
+		cout << "2 - Удалить элемент списка" << endl;
+		cout << "3 - Вывести список" << endl;
+		cout << "4 - Вывести элемент списка по номеру телефона" << endl;
+		cout << "5 - Отсортировать список" << endl;
+		cout << "6 - Записать файл в список" << endl;
+		cout << "7 - Создать список из файла" << endl;
+
+		cout << "Выбор: ";
+		cin >> result;
+
+		system("cls");
+	} while (result < 1 || result > 7);
+
+	cout << endl;
+	return result;
+}
+
+void InitList(DuoList*& Head, DuoList*& Tail)
+{
+	Head = NULL;
+	Tail = NULL;
+}
+
+void AddFirst(DuoList*& Head, DuoList*& Tail)
+{
+	char tmp[100];
+
+	Head = new DuoList;
+	cout << "Введите данные новой записи: " << endl;
+	do {
+		cout << "Введите номер телефона, не больше 12 символов:" << endl;
+		cin >> tmp;
+	} while (strlen(tmp) > 12 || !atoi(tmp));
+	strcpy_s(Head->telephone_m, tmp);
+
+	do {
+		cout << "Введите имя, не больше 10 символов:" << endl;;
+		cin >> tmp;
+	} while (strlen(tmp) > 10 || atoi(tmp));
+	strcpy_s(Head->name_m, tmp);
+	cin.ignore();
+
+	do {
+		cout << "Введите фамилию, не больше 20 символов:" << endl;
+		cin.getline(tmp, 99);
+	} while (strlen(tmp) > 20 || atoi(tmp));
+	strcpy_s(Head->surname_m, tmp);
+
+	Head->next = NULL;
+	Head->prev = NULL;
+	Tail = Head;
+}
+
+void AddInBeg(DuoList*& Head, DuoList*& Tail)
+{
+	char tmp[100];
+
+	if (Head == NULL)
+	{
+		cout << "Список не был создан, сперва создайте первый элемент" << endl;
+		AddFirst(Head, Tail);
+		return;
+	}
+	else
+	{
+		DuoList* q = new DuoList;
+
+		cout << "Введите данные новой записи: " << endl;
+
+		do {
+			cout << "Введите номер телефона, не больше 12 символов:" << endl;
+			cin >> tmp;
+		} while (strlen(tmp) > 12 || CheckRepeat(Head, tmp) || !atoi(tmp));
+		strcpy_s(q->telephone_m, tmp);
+
+		do {
+			cout << "Введите имя, не больше 10 символов:" << endl;;
+			cin >> tmp;
+		} while (strlen(tmp) > 10 || atoi(tmp));
+		strcpy_s(q->name_m, tmp);
+		cin.ignore();
+
+		do {
+			cout << "Введите фамилию, не больше 20 символов:" << endl;
+			cin.getline(tmp, 99);
+		} while (strlen(tmp) > 20 || atoi(tmp));
+		strcpy_s(q->surname_m, tmp);
+
+		q->next = Head;
+		q->prev = NULL;
+		Head->prev = q;
+		Tail = Head = q;
+		q = nullptr;
+	}
+}
+
+void AddInEnd(DuoList*& Head, DuoList*& Tail)
+{
+	if (Head == NULL)
+	{
+		cout << "Список не был создан, сперва создайте первый элемент" << endl;
+		AddFirst(Head, Tail);
+		return;
+	}
+	else
+	{
+		char  tmp[101];
+		DuoList* q = new DuoList;
+
+		cout << "Введите данные новой записи: " << endl;
+
+		do {
+			cout << "Введите номер телефона, не больше 12 символов:" << endl;
+			cin >> tmp;
+		} while (strlen(tmp) > 12 || CheckRepeat(Head, tmp) || !atoi(tmp));
+		strcpy_s(q->telephone_m, tmp);
+
+		do {
+			cout << "Введите имя, не больше 10 символов:" << endl;;
+			cin >> tmp;
+		} while (strlen(tmp) > 10 || atoi(tmp));
+		strcpy_s(q->name_m, tmp);
+		cin.ignore();
+
+		do {
+			cout << "Введите фамилию, не больше 20 символов:" << endl;
+			cin.getline(tmp, 99);
+		} while (strlen(tmp) > 20 || atoi(tmp));
+		strcpy_s(q->surname_m, tmp);
+
+		q->next = NULL;
+		q->prev = Tail;
+		Tail->next = q;
+		Tail = q;
+		q = nullptr;
+	}
+}
+
+void AddPk(DuoList*& Head, DuoList*& Tail, DuoList* const& Required)
+{
+	if (Required == nullptr)
+	{
+		cout << "Элемент не найден!" << endl;
+		return;
+	}
+
+	if (Head == NULL)
+	{
+		cout << "Список не был создан, сперва создайте первый элемент" << endl;
+		AddFirst(Head, Tail);
+	}
+	else
+	{
+		char tmp[101];
+		DuoList* Pk = Required, * q = new DuoList;
+
+		cout << "Введите данные новой записи: " << endl;
+
+		do {
+			cout << "Введите номер телефона, не больше 12 символов:" << endl;
+			cin >> tmp;
+		} while (strlen(tmp) > 12 || CheckRepeat(Head, tmp) || !atoi(tmp));
+		strcpy_s(q->telephone_m, tmp);
+
+		do {
+			cout << "Введите имя, не больше 10 символов:" << endl;;
+			cin >> tmp;
+		} while (strlen(tmp) > 10 || atoi(tmp));
+		strcpy_s(q->name_m, tmp);
+		cin.ignore();
+
+		do {
+			cout << "Введите фамилию, не больше 20 символов:" << endl;
+			cin.getline(tmp, 99);
+		} while (strlen(tmp) > 20 || atoi(tmp));
+		strcpy_s(q->surname_m, tmp);
+
+		int a = 0;
+		cout << "Вставить перед или после выбраного элемента?" << "\n0 - Перед" << "\n1 - После" << endl;
+		do
+		{
+			cout << "Выбор: " << endl;
+			cin >> a;
+		} while (a < 0 || a > 1);
+
+		if (!a)
+		{
+			q->next = Pk;
+			q->prev = Pk->prev;
+			if (Pk->prev)
+				Pk->prev->next = q;
+			else
+				Head = q;
+			Pk->prev = q;
+		}
+		else
+		{
+			q->prev = Pk;
+			q->next = Pk->next;
+			if (Pk->next)
+				Pk->next->prev = q;
+			Pk->next = q;
+		}
+	}
+}
+
+void PrintList(DuoList*& Head, DuoList*& Tail)
+{
+	if (Head == NULL)
+		cout << "Список пуст" << endl;
+	else
+	{
+		DuoList* q = Head;
+		cout << "Существующие записи: " << endl;
+		while (q)
+		{
+			cout << "\nНомер телефона: " << q->telephone_m << "\nИмя: " << q->name_m << "\nФамилия: " << q->surname_m << endl << endl;
+			q = q->next;
+		}
+	}
+}
+
+void PrintElem(DuoList*& Head, DuoList* const& Required)
+{
+	if (Head == NULL)
+		cout << "Список пуст" << endl;
+	else
+	{
+		DuoList* q = Required;
+
+		cout << "\nНайденные данные: " << endl;
+		cout << "\nИмя: " << q->name_m << "\nФамилия: " << q->surname_m << "\nНомер телефона: " << q->telephone_m << endl << endl;
+	}
+}
+
+DuoList* FindItem(DuoList*& Head)
+{
+	char telephone[12], tmp[101];
+	DuoList* q = Head;
+	bool flag = true;
+
+	cin.ignore();
+	do
+	{
+		cout << "Введите номер телефона или фамилию, которые нужно найти:" << endl;
+		cin >> tmp;
+
+		if (atoi(tmp))
+		{
+			if (strlen(tmp) > 12)
+			{
+				cout << "Число символов для телефона не должна превышать 12!" << endl;
+				flag = true;
+			}
+			else
+				strcpy_s(telephone, tmp);
+		}
+		else
+		{
+			if (strlen(tmp) > 21)
+			{
+				cout << "Число символов для фамилии не должна превышать 21!" << endl;
+				flag = true;
+			}
+			else
+				strcpy_s(telephone, tmp);
+		}
+	} while (flag);
+
+	while (q)
+		if (!strcmp(q->telephone_m, telephone) || !strcmp(q->surname_m, telephone))
+			return q;
+		else
+			q = q->next;
+	return nullptr;
+}
+
+bool CheckRepeat(DuoList*& Head, char item[])
+{
+	if (Head)
+	{
+		DuoList* q = Head;
+		string s1, s2;
+
+		s1 = item;
+		while (q)
+		{
+			s2 = q->telephone_m;
+
+			if (s1 == s2)
+				return 1;
+			else
+				q = q->next;
+		}
+	}
+	return 0;
+}
+
+void DeleteAll(DuoList*& Head, DuoList*& Tail)
+{
+	if (!Head)
+		cout << "Список пуст" << endl;
+	else if (Head == Tail)
+	{
+		DuoList* q = Tail;
+		InitList(Head, Tail);
+		delete q;
+	}
+	else
+	{
+		DuoList* q = Tail;
+		while (q)
+		{
+			Tail = Tail->prev;
+			if (!Tail)
+				InitList(Head, Tail);
+			else
+				Tail->next = NULL;
+			q->prev = NULL;
+			delete q;
+
+			q = Tail;
+		}
+	}
+}
+
+void DelInBeg(DuoList*& Head, DuoList*& Tail)
+{
+	if (!Head)
+		cout << "Список пуст" << endl;
+	else if (Head->next == NULL)
+	{
+		DuoList* q = Head;
+		Tail = Head = Head->next;
+		delete q;
+	}
+	else
+	{
+		DuoList* q = Head;
+		Head = Head->next;
+		Head->prev = NULL;
+		q->next = NULL;
+		delete q;
+	}
+}
+
+void DelInEnd(DuoList*& Head, DuoList*& Tail)
+{
+	if (!Tail)
+		cout << "Список пуст" << endl;
+	else if (!Tail->prev)
+	{
+		DuoList* q = Tail;
+		Head = Tail = Tail->prev;
+		delete q;
+	}
+	else
+	{
+		DuoList* q = Tail;
+		Tail = Tail->prev;
+		Tail->next = NULL;
+		q->prev = NULL;
+		delete q;
+	}
+}
+
+void DelByNumber(DuoList*& Head, DuoList*& Tail, DuoList* const& Required)
+{
+	if (Required == nullptr)
+	{
+		cout << "Элемент не найден!" << endl;
+		return;
+	}
+
+	if (Required == Head)
+		DelInBeg(Head, Tail);
+	else if (Required == Tail)
+		DelInEnd(Head, Tail);
+	else
+	{
+		DuoList* prevItem = Required->prev;
+
+		prevItem->next = Required->next;
+		prevItem->next->prev = prevItem;
+		Required->next = NULL;
+		Required->prev = NULL;
+		delete Required;
+	}
+}
+
+void SortList(DuoList*& Head, DuoList*& Tail)
+{
+	DuoList* Slider = Head;
+	int range = 0;
+
+	while (Slider)
+	{
+		range++;
+		Slider = Slider->next;
+	}
+	if (range > 1)
+	{
+		Slider = Head;
+		for (int i = 0; i < range - 1; i++)
+			for (int i = 0; i < range - i - 1; i++)
+			{
+				if (strcmp(Slider->surname_m, Slider->next->surname_m) == 1)
+				{
+					char tmp[100];
+					strcpy_s(tmp, Slider->telephone_m);
+					strcpy_s(Slider->telephone_m, Slider->next->telephone_m);
+					strcpy_s(Slider->next->telephone_m, tmp);
+
+					strcpy_s(tmp, Slider->name_m);
+					strcpy_s(Slider->name_m, Slider->next->name_m);
+					strcpy_s(Slider->next->name_m, tmp);
+
+					strcpy_s(tmp, Slider->surname_m);
+					strcpy_s(Slider->surname_m, Slider->next->surname_m);
+					strcpy_s(Slider->next->surname_m, tmp);
+				}
+			}
+	}
+	else
+		cout << "Нужно бооольше золо... кхм.. элементов!" << endl;
+}
+
+void ToFile(DuoList*& Head, DuoList*& Tail)
+{
+	ofstream out;
+	out.open("phone.dat", ios::binary | ios::out);
+
+	if (!out.is_open())
+	{
+		cout << "Йой. Файл не открывается!" << endl;
+	}
+	else
+	{
+		cout << "Так, файл открыт и готов к записе!" << endl;
+		DuoList* q = Head;
+		while (q != NULL)
+		{
+			out.write((char*)&q->telephone_m, sizeof(DuoList::telephone_m));
+			out.write((char*)&q->name_m, sizeof(DuoList::name_m));
+			out.write((char*)&q->surname_m, sizeof(DuoList::surname_m));
+			q = q->next;
+		}
+	}
+	out.close();
+	cout << "Данные записаны!" << endl;
+}
+
+DuoList* NewNode(ifstream& in)
+{
+	DuoList* new_elem = new DuoList;
+
+	in.read((char*)&new_elem->telephone_m, sizeof(DuoList::telephone_m));
+
+	if (!atoi(new_elem->telephone_m))
+	{
+		cout << "Было считана строка связанная с телефоном, в которой не было цифр. Номер заменен на 000" << endl;
+		strcpy_s(new_elem->telephone_m, "000");
+	}
+
+	in.read((char*)&new_elem->name_m, sizeof(DuoList::name_m));
+	in.read((char*)&new_elem->surname_m, sizeof(DuoList::surname_m));
+
+	new_elem->prev = NULL;
+	new_elem->next = NULL;
+	return new_elem;
+}
+
+void FromFile(DuoList*& Head, DuoList*& Tail)
+{
+	cout << "Внимание! Будет создан новый список!" << "\nВы согласны?" << "\n0 - Да" << "\n1 - Нет" << endl;
+	int a = 0;
+	do
+	{
+		cin >> a;
+	} while (a < 0 || a > 1);
+
+	if (!a)
+	{
+		DeleteAll(Head, Tail);
+
+		ifstream in;
+		in.open("phone.dat", ios::binary | ios::out);
+
+		if (!in.is_open())
+		{
+			cout << "Йой. Файл не открывается!" << endl;
+		}
+		else
+		{
+			cout << "Так, файл открыт и готов к чтению!" << endl;
+
+			in.seekg(0, ios::end);
+			int flag = in.tellg();
+			in.seekg(0, ios::beg);
+
+			Head = NewNode(in);
+			Tail = Head;
+			DuoList* temp;
+
+
+			while ((int)in.tellg() != flag)
+			{
+
+				temp = NewNode(in);
+
+				Tail->next = temp;
+				temp->prev = Tail;
+				Tail = temp;
+			}
+		}
+		in.close();
+		cout << "Файл считан!" << endl;
+	}
+	else
+		cout << "\nНовый список не будет создан" << endl;
+}
